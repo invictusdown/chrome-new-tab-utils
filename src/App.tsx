@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Settings, Download, Search, File } from 'lucide-react';
+import { FileText, Settings, Download, File } from 'lucide-react';
 import { ImageConverter } from './components/ImageConverter';
 import { ImageResizer } from './components/ImageResizer';
 import { Widget } from './components/Widget';
@@ -52,16 +52,6 @@ function App() {
             acceptedFiles={['.jpg', '.jpeg', '.png', '.pdf']}
             onDrop={handleOCRDrop}
           />
-        </div>
-
-        <div className="mt-12 bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
-          <div className="flex items-center gap-3 mb-6">
-            <Search className="w-6 h-6 text-purple-400" />
-            <h2 className="text-lg font-semibold text-gray-100">Recent Conversions</h2>
-          </div>
-          <div className="text-center text-gray-400 py-8">
-            Your recent file conversions will appear here
-          </div>
         </div>
       </main>
     </div>
