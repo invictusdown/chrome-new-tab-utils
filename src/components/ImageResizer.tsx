@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Settings2, Lock, Unlock } from 'lucide-react';
+import { Image as ImageIcon, Settings2, Lock, Unlock } from 'lucide-react';
 import { Widget } from './Widget';
 import { ResizerSettings } from './ResizerSettings';
 
@@ -22,29 +22,70 @@ export const ImageResizer: React.FC = () => {
     const file = files[0];
     if (!file) return;
 
-    // Get original image dimensions
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    
-    img.onload = () => {
-      const aspectRatio = img.width / img.height;
-      setSettings(prev => ({
-        ...prev,
-        width: img.width,
-        height: img.height,
-        originalAspectRatio: aspectRatio
-      }));
-      URL.revokeObjectURL(url);
-    };
-    
-    img.src = url;
+    try {
+      // Get original image dimensions and update settings
+      const img = new window.Image();
+      const loadImagePromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          const aspectRatio = img.width / img.height;
+          setSettings(prev => ({
+            ...prev,
+            width: img.width,
+            height: img.height,
+            originalAspectRatio: aspectRatio
+          }));
+          resolve(img);
+        };
+        img.onerror = reject;
+      });
+
+      img.src = URL.createObjectURL(file);
+      await loadImagePromise;
+
+      // Create canvas for resizing
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+
+      // Set canvas dimensions to target size
+      canvas.width = settings.width;
+      canvas.height = settings.height;
+
+      // Draw and resize image
+      ctx.drawImage(img, 0, 0, settings.width, settings.height);
+
+      // Convert to blob
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Get original filename
+      const filename = file.name.replace(/\.[^/.]+$/, '.png');
+
+      // Download using Chrome API
+      chrome.downloads.download({
+        url: blobUrl,
+        filename: filename,
+        saveAs: false
+      });
+
+      // Cleanup
+      URL.revokeObjectURL(img.src);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error resizing image:', error);
+    }
   };
 
   return (
     <div className="relative">
       <Widget
         title="Image Resizer"
-        icon={<Image className="w-6 h-6 text-purple-400" />}
+        icon={<ImageIcon className="w-6 h-6 text-purple-400" />}
         acceptedFiles={['.jpg', '.jpeg', '.png', '.gif']}
         onDrop={handleDrop}
         actionButton={
